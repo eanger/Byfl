@@ -207,4 +207,8 @@ uint64_t bf_get_split_accesses(void){
   return res;
 }
 
+uint64_t bf_get_split_accesses(void){
+  return cache->getSplitAccesses();
+}
+
 } // namespace bytesflops
