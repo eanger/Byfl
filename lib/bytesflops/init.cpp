@@ -232,11 +232,12 @@ namespace bytesflops_pass {
       vector<Type*> all_function_args;
       all_function_args.push_back(IntegerType::get(globctx, 64));
       all_function_args.push_back(IntegerType::get(globctx, 64));
+      all_function_args.push_back(IntegerType::get(globctx, 64));
       FunctionType* void_func_result =
         FunctionType::get(Type::getVoidTy(globctx), all_function_args, false);
       access_cache = 
         declare_extern_c(void_func_result,
-                         "_ZN10bytesflops14bf_touch_cacheEmm",
+                         "_ZN10bytesflops14bf_touch_cacheEmmm",
                          &module);
     }
 

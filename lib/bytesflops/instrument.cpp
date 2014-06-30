@@ -169,6 +169,7 @@ namespace bytesflops_pass {
       vector<Value*> arg_list;
       arg_list.push_back(mem_addr);
       arg_list.push_back(num_bytes);
+      arg_list.push_back(opcode == Instruction::Load ? one : zero);
       callinst_create(access_cache, arg_list, insert_before);
     }
 

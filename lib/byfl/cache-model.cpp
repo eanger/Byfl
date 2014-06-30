@@ -15,15 +15,16 @@ using namespace std;
 
 class Cache {
   public:
-    void access(uint64_t baseaddr, uint64_t numaddrs);
-    Cache(uint64_t line_size) : line_size_{line_size}, accesses_{0},
-      split_accesses_{0} {}
+    void access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load);
+    Cache(uint64_t line_size) : tracefile_{"mem.trace"}, line_size_{line_size},
+      accesses_{0}, split_accesses_{0} {}
     uint64_t getAccesses() const { return accesses_; }
     vector<uint64_t> getHits() const { return hits_; }
     uint64_t getColdMisses() const { return hits_.size(); }
     uint64_t getSplitAccesses() const { return split_accesses_; }
 
   private:
+    ofstream tracefile_;
     vector<uint64_t> lines_; // back is mru, front is lru
     uint64_t line_size_;
     uint64_t accesses_;
@@ -31,7 +32,7 @@ class Cache {
     uint64_t split_accesses_;
 };
 
-void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
+void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
   uint64_t num_accesses = 0; // running total of number of lines accessed
   for(uint64_t addr = baseaddr / line_size_ * line_size_;
       addr <= (baseaddr + numaddrs ) / line_size_ * line_size_;
@@ -65,6 +66,8 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
   if(num_accesses != 1){
     ++split_accesses_;
   }
+
+  tracefile_ << is_load == uint64_t{1} ? 0 : 1 << " " << hex << addr_ << endl;
 }
 
 static Cache* cache = NULL;
@@ -76,8 +79,8 @@ void initialize_cache(void){
 }
 
 // Access the cache model with this address.
-void bf_touch_cache(uint64_t baseaddr, uint64_t numaddrs){
-  cache->access(baseaddr, numaddrs);
+void bf_touch_cache(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
+  cache->access(baseaddr, numaddrs, is_load);
 }
 
 // Get cache accesses
