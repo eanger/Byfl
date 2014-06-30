@@ -67,7 +67,8 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
     ++split_accesses_;
   }
 
-  tracefile_ << is_load == uint64_t{1} ? 0 : 1 << " " << hex << addr_ << endl;
+  int access_type = is_load == 1 ? 0 : 1;
+  tracefile_ << access_type << " " << hex << addr_ << endl;
 }
 
 static Cache* cache = NULL;
