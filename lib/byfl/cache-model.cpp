@@ -82,7 +82,8 @@ class Cache {
     uint64_t accesses_;
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
-    d4cache* l1, *l2, *l3;
+  public:
+    d4cache* l1, *l2, *l3, *mem;
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
@@ -148,6 +149,9 @@ uint64_t bf_get_cache_accesses(void){
 // Get cache hits
 vector<uint64_t> bf_get_cache_hits(void){
   // hack: dump out our stats now
+  auto l1 = cache->l1;
+  auto l2 = cache->l2;
+  auto l3 = cache->l3;
   ofstream df{"dinero.out"};
   df << "l1 accesses\tl2 accesses\tl3 accesses\tmem accesses" << endl;
   df << l1->fetch[D4XREAD] + l1->fetch[D4XWRITE] << "\t"
