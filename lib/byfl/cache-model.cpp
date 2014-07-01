@@ -21,10 +21,10 @@ class Cache {
     void access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load);
     Cache(uint64_t line_size) : line_size_{line_size}, accesses_{0},
       split_accesses_{0} {
-        d4cache* mem = d4new(NULL);
-        d4cache* l3 = d4new(mem);
-        d4cache* l2 = d4new(l3);
-        dinero = d4new(l2);
+        mem = d4new(NULL);
+        l3 = d4new(mem);
+        l2 = d4new(l3);
+        l1 = d4new(l2);
         l3->name = "l3";
         l3->flags = D4F_CCC;
         l3->lg2blocksize = 6;
@@ -53,20 +53,20 @@ class Cache {
         l2->name_prefetch = "none";
         l2->name_walloc = "always";
         l2->name_wback = "always";
-        dinero->name = "dinero";
-        dinero->flags = D4F_CCC;
-        dinero->lg2blocksize = 6;
-        dinero->lg2subblocksize = 6;
-        dinero->lg2size = 15;
-        dinero->assoc = 8;
-        dinero->replacementf = d4rep_lru;
-        dinero->prefetchf = d4prefetch_none;
-        dinero->wallocf = d4walloc_always;
-        dinero->wbackf = d4wback_always;
-        dinero->name_replacement = "lru";
-        dinero->name_prefetch = "none";
-        dinero->name_walloc = "always";
-        dinero->name_wback = "always";
+        l1->name = "l1";
+        l1->flags = D4F_CCC;
+        l1->lg2blocksize = 6;
+        l1->lg2subblocksize = 6;
+        l1->lg2size = 15;
+        l1->assoc = 8;
+        l1->replacementf = d4rep_lru;
+        l1->prefetchf = d4prefetch_none;
+        l1->wallocf = d4walloc_always;
+        l1->wbackf = d4wback_always;
+        l1->name_replacement = "lru";
+        l1->name_prefetch = "none";
+        l1->name_walloc = "always";
+        l1->name_wback = "always";
         if(d4setup() != 0){
           exit(-1);
         }
@@ -82,7 +82,7 @@ class Cache {
     uint64_t accesses_;
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
-    d4cache* dinero;
+    d4cache* l1, *l2, *l3;
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
@@ -124,7 +124,7 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
   ref.address = baseaddr;
   ref.size = numaddrs;
   ref.accesstype = (is_load == 1 ? D4XREAD : D4XWRITE);
-  d4ref(dinero, ref);
+  d4ref(l1, ref);
 }
 
 static Cache* cache = NULL;
@@ -147,6 +147,17 @@ uint64_t bf_get_cache_accesses(void){
 
 // Get cache hits
 vector<uint64_t> bf_get_cache_hits(void){
+  // hack: dump out our stats now
+  ofstream df{"dinero.out"};
+  df << "l1 accesses\tl2 accesses\tl3 accesses\tmem accesses" << endl;
+  df << l1->fetch[D4XREAD] + l1->fetch[D4XWRITE] << "\t"
+     << l2->fetch[D4XREAD] + l2->fetch[D4XWRITE] << "\t"
+     << l3->fetch[D4XREAD] + l3->fetch[D4XWRITE] << "\t"
+     << l3->miss[D4XREAD] + l3->miss[D4XWRITE] << endl;
+  df << "l1 conflict misses\tl2 conflict misses\tl3 conflict misses" << endl;
+  df << l1->conf_miss[D4XREAD] + l1->conf_miss[D4XWRITE] << "\t"
+     << l2->conf_miss[D4XREAD] + l2->conf_miss[D4XWRITE] << "\t"
+     << l3->conf_miss[D4XREAD] + l3->conf_miss[D4XWRITE] << endl;
   // The total hits to a cache size N is equal to the sum of unique hits to 
   // all caches sized N or smaller.
   auto hits = cache->getHits();
