@@ -29,7 +29,7 @@ class Cache {
         l3->flags = D4F_CCC;
         l3->lg2blocksize = 6;
         l3->lg2subblocksize = 6;
-        l3->lg2size = 24;
+        l3->lg2size = 23;
         l3->assoc = 16;
         l3->replacementf = d4rep_lru;
         l3->prefetchf = d4prefetch_none;
