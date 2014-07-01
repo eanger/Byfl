@@ -20,7 +20,7 @@ BYTECODE_LIBRARY = 1
 SOURCES = byfl.cpp reuse-dist.cpp symtable.cpp threading.cpp ubytes.cpp vectors.cpp tallybytes.cpp cache-model.cpp
 BUILT_SOURCES = opcode2name.cpp opcode2name.h
 EXTRA_DIST = byfl.h cachemap.h opcode2name
-CPPFLAGS += -I$(PROJ_SRC_ROOT)/lib/include
+CPPFLAGS += -I$(PROJ_SRC_ROOT)/lib/include -I/home/eanger/tmp/d4-7
 
 #
 # Specify how to create opcode2name.cpp and opcode2name.h
