@@ -46,7 +46,7 @@ class Cache {
         l2->replacementf = d4rep_lru;
         l2->prefetchf = d4prefetch_none;
         l2->wallocf = d4walloc_always;
-        l2->wbackf = wback_always;
+        l2->wbackf = d4wback_always;
         l2->name_replacement = "lru";
         l2->name_prefetch = "none";
         l2->name_walloc = "always";
@@ -60,7 +60,7 @@ class Cache {
         dinero->replacementf = d4rep_lru;
         dinero->prefetchf = d4prefetch_none;
         dinero->wallocf = d4walloc_always;
-        dinero->wbackf = wback_always;
+        dinero->wbackf = d4wback_always;
         dinero->name_replacement = "lru";
         dinero->name_prefetch = "none";
         dinero->name_walloc = "always";
