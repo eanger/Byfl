@@ -32,7 +32,7 @@ class Cache {
         l3->replacementf = d4rep_lru;
         l3->prefetchf = d4prefetch_none;
         l3->wallocf = d4walloc_always;
-        l3->wbackf = wback_always;
+        l3->wbackf = d4wback_always;
         l3->name_replacement = "lru";
         l3->name_prefetch = "none";
         l3->name_walloc = "always";
