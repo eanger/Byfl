@@ -6,7 +6,9 @@
 
 #include <algorithm>
 #include <iterator>
+extern "C"{
 #include <d4.h>
+}
 
 #include "byfl.h"
 
