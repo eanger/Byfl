@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <d4.h>
 
 #include "byfl.h"
 
@@ -16,20 +17,70 @@ using namespace std;
 class Cache {
   public:
     void access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load);
-    Cache(uint64_t line_size) : tracefile_{"mem.trace"}, line_size_{line_size},
-      accesses_{0}, split_accesses_{0} {}
+    Cache(uint64_t line_size) : line_size_{line_size}, accesses_{0},
+      split_accesses_{0} {
+        d4cache* mem = d4new(NULL);
+        d4cache* l3 = d4new(mem);
+        d4cache* l2 = d4new(l3);
+        dinero = d4new(l2);
+        l3->name = "l3";
+        l3->flags = D4F_CCC;
+        l3->lg2blocksize = 6;
+        l3->lg2subblocksize = 6;
+        l3->lg2size = 24;
+        l3->assoc = 16;
+        l3->replacementf = d4rep_lru;
+        l3->prefetchf = d4prefetch_none;
+        l3->wallocf = d4walloc_always;
+        l3->wbackf = wback_always;
+        l3->name_replacement = "lru";
+        l3->name_prefetch = "none";
+        l3->name_walloc = "always";
+        l3->name_wback = "always";
+        l2->name = "l2";
+        l2->flags = D4F_CCC;
+        l2->lg2blocksize = 6;
+        l2->lg2subblocksize = 6;
+        l2->lg2size = 18;
+        l2->assoc = 8;
+        l2->replacementf = d4rep_lru;
+        l2->prefetchf = d4prefetch_none;
+        l2->wallocf = d4walloc_always;
+        l2->wbackf = wback_always;
+        l2->name_replacement = "lru";
+        l2->name_prefetch = "none";
+        l2->name_walloc = "always";
+        l2->name_wback = "always";
+        dinero->name = "dinero";
+        dinero->flags = D4F_CCC;
+        dinero->lg2blocksize = 6;
+        dinero->lg2subblocksize = 6;
+        dinero->lg2size = 15;
+        dinero->assoc = 8;
+        dinero->replacementf = d4rep_lru;
+        dinero->prefetchf = d4prefetch_none;
+        dinero->wallocf = d4walloc_always;
+        dinero->wbackf = wback_always;
+        dinero->name_replacement = "lru";
+        dinero->name_prefetch = "none";
+        dinero->name_walloc = "always";
+        dinero->name_wback = "always";
+        if(d4setup() != 0){
+          exit(-1);
+        }
+      }
     uint64_t getAccesses() const { return accesses_; }
     vector<uint64_t> getHits() const { return hits_; }
     uint64_t getColdMisses() const { return hits_.size(); }
     uint64_t getSplitAccesses() const { return split_accesses_; }
 
   private:
-    ofstream tracefile_;
     vector<uint64_t> lines_; // back is mru, front is lru
     uint64_t line_size_;
     uint64_t accesses_;
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
+    d4cache* dinero;
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
@@ -67,8 +118,11 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
     ++split_accesses_;
   }
 
-  int access_type = is_load == 1 ? 0 : 1;
-  tracefile_ << access_type << " " << hex << baseaddr << endl;
+  d4memref ref;
+  ref.address = baseaddr;
+  ref.size = numaddrs;
+  ref.accesstype = (is_load == 1 ? D4XREAD : D4XWRITE);
+  d4ref(dinero, ref);
 }
 
 static Cache* cache = NULL;
