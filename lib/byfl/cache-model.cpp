@@ -152,7 +152,7 @@ vector<uint64_t> bf_get_cache_hits(void){
   auto l1 = cache->l1;
   auto l2 = cache->l2;
   auto l3 = cache->l3;
-  ofstream df{"dinero.out"};
+  ofstream df{"dinero.dump"};
   df << fixed;
   df << "l1 accesses\tl2 accesses\tl3 accesses\tmem accesses" << endl;
   df << l1->fetch[D4XREAD] + l1->fetch[D4XWRITE] << "\t"
