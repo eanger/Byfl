@@ -9,6 +9,8 @@
 extern "C"{
 #include <d4.h>
 }
+#include <thread>
+#include <mutex>
 
 #include "byfl.h"
 
@@ -128,22 +130,36 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
   d4ref(l1, ref);
 }
 
-static Cache* cache = NULL;
-
 namespace bytesflops{
 
+static __thread Cache* cache = nullptr;
+static vector<Cache*>* caches = nullptr;
+static mutex mymutex;
+
 void initialize_cache(void){
-  cache = new Cache(bf_line_size);
+  if(caches == nullptr){
+    caches = new vector<Cache*>();
+  }
 }
 
 // Access the cache model with this address.
 void bf_touch_cache(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
+  if(cache == nullptr){
+    // Only let one thread update caches at a time.
+    lock_guard<mutex> guard(mymutex);
+    cache = new Cache(bf_line_size);
+    caches->push_back(cache);
+  }
   cache->access(baseaddr, numaddrs, is_load);
 }
 
 // Get cache accesses
 uint64_t bf_get_cache_accesses(void){
-  return cache->getAccesses();
+  uint64_t res = 0;
+  for(auto& cache: *caches){
+    res += cache->getAccesses();
+  }
+  return res;
 }
 
 // Get cache hits
@@ -168,19 +184,27 @@ vector<uint64_t> bf_get_cache_hits(void){
   auto hits = cache->getHits();
   vector<uint64_t> tot_hits(hits.size());
   uint64_t prev_hits = 0;
-  for(uint64_t i = 0; i < hits.size(); ++i){
-    tot_hits[i] = hits[i] + prev_hits;
+  for(uint64_t i = 0; i < tot_hits.size(); ++i){
+    tot_hits[i] += prev_hits;
     prev_hits = tot_hits[i];
   }
   return tot_hits;
 }
 
 uint64_t bf_get_cold_misses(void){
-  return cache->getColdMisses();
+  uint64_t res = 0;
+  for(auto& cache: *caches){
+    res += cache->getColdMisses();
+  }
+  return res;
 }
 
 uint64_t bf_get_split_accesses(void){
-  return cache->getSplitAccesses();
+  uint64_t res = 0;
+  for(auto& cache: *caches){
+    res += cache->getSplitAccesses();
+  }
+  return res;
 }
 
 } // namespace bytesflops
