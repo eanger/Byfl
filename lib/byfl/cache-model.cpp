@@ -120,7 +120,7 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
   // we've made all our accesses
   accesses_ += num_accesses;
   if(num_accesses != 1){
-    ++split_accesses_;
+    split_accesses_ += num_accesses;
   }
 
   d4memref ref;
