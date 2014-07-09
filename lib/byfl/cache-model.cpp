@@ -115,6 +115,13 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
 
     // move up this address to mru position
     lines_.push_back(addr);
+
+    // do dinero access
+    d4memref ref;
+    ref.address = addr;
+    ref.size = line_size_;
+    ref.accesstype = (is_load == 1 ? D4XREAD : D4XWRITE);
+    d4ref(l1, ref);
   }
 
   // we've made all our accesses
@@ -122,12 +129,6 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs, uint64_t is_load){
   if(num_accesses != 1){
     split_accesses_ += num_accesses;
   }
-
-  d4memref ref;
-  ref.address = baseaddr;
-  ref.size = numaddrs;
-  ref.accesstype = (is_load == 1 ? D4XREAD : D4XWRITE);
-  d4ref(l1, ref);
 }
 
 namespace bytesflops{
