@@ -32,6 +32,7 @@ class Cache {
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
     map<uint64_t, uint64_t> last_use_;
+    vector<bool> stack_residency_;
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
@@ -43,13 +44,22 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
 
     auto last_use_time = last_use_.find(addr);
     if(last_use_time != end(last_use_)){
-      auto stack_distance = current_time - last_use_time->second;
-      if(stack_distance > hits_.size()){
-        hits_.resize(stack_distance + 1);
+      // calc distance
+      uint64_t distance = 0;
+      for(auto resident = begin(stack_residency_) + last_use_time->second;
+          resident != end(stack_residency_); ++resident){
+        if(*resident) ++distance;
       }
-      ++hits_[stack_distance];
+      ++hits_[distance];
+      //update B
+      stack_residency_[last_use_time->second] = false;
+    } else {
+      hits_.emplace_back(0);
     }
+    //update P
     last_use_[addr] = current_time;
+    //update B
+    stack_residency_.push_back(true);
   }
 
   // we've made all our accesses
