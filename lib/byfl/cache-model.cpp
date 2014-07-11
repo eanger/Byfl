@@ -31,6 +31,7 @@ class Cache {
     uint64_t accesses_;
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
+    map<uint64_t, uint64_t> line_lookup_; // map an address to its index in the stack
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
@@ -39,27 +40,23 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
       addr <= (baseaddr + numaddrs ) / line_size_ * line_size_;
       addr += line_size_){
     ++num_accesses;
-    auto line = lines_.rbegin();
-    auto hit = begin(hits_);
-    bool found = false;
-    for(; line != lines_.rend(); ++line, ++hit){
-      if(addr == *line){
-        found = true;
-        ++(*hit);
-        // erase the line pointed to by this reverse iterator. see
-        // stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
-        lines_.erase((line + 1).base());
-        break;
+    auto line = line_lookup_.find(addr);
+    if(line == end(line_lookup_)){
+      //didn't find the line
+      hits_.push_back(0);
+    } else {
+      auto index = line->second;
+      ++hits_[index];
+      lines_.erase(begin(lines_) + index); // erase this line
+      for(auto& lookup : line_lookup_){
+        if(lookup.second > index){
+          --lookup.second;
+        }
       }
     }
 
-    if(!found){
-      // add a new hit entry
-      hits_.push_back(0);
-    }
-
-    // move up this address to mru position
     lines_.push_back(addr);
+    line_lookup_[addr] = 0;
   }
 
   // we've made all our accesses
