@@ -31,24 +31,25 @@ class Cache {
     uint64_t accesses_;
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
-    unordered_map<uint64_t, uint64_t> last_use_;
-    vector<bool> stack_residency_;
-
-    uint64_t evalDist(uint64_t last_use_time);
+    map<uint64_t, uint64_t> last_use_;
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
   uint64_t num_accesses = 0; // running total of number of lines accessed
   for(uint64_t addr = baseaddr / line_size_ * line_size_;
       addr <= (baseaddr + numaddrs ) / line_size_ * line_size_;
-      addr += line_size_){
-    ++num_accesses;
+      addr += line_size_, ++num_accesses){
+    auto current_time = accesses_ + num_accesses;
 
     auto last_use_time = last_use_.find(addr);
     if(last_use_time != end(last_use_)){
-      auto dist = evalDist(*last_use_time);
+      auto stack_distance = current_time - last_use_time->second;
+      if(stack_distance > hits_.size()){
+        hits_.resize(stack_distance + 1);
+      }
+      ++hits_[stack_distance];
     }
-    stack_residency_[accesses_ + num_accesses]
+    last_use_[addr] = current_time;
   }
 
   // we've made all our accesses
