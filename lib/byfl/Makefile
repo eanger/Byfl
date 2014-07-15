@@ -17,9 +17,9 @@ LEVEL=../..
 #
 LIBRARYNAME = byfl
 BYTECODE_LIBRARY = 1
-SOURCES = byfl.cpp reuse-dist.cpp symtable.cpp threading.cpp ubytes.cpp vectors.cpp tallybytes.cpp cache-model.cpp
+SOURCES = byfl.cpp reuse-dist.cpp symtable.cpp threading.cpp ubytes.cpp vectors.cpp tallybytes.cpp cache-model.cpp rbtree.cpp
 BUILT_SOURCES = opcode2name.cpp opcode2name.h
-EXTRA_DIST = byfl.h cachemap.h opcode2name
+EXTRA_DIST = byfl.h cachemap.h rbtree.h opcode2name
 CPPFLAGS += -I$(PROJ_SRC_ROOT)/lib/include
 
 #
