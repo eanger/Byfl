@@ -20,7 +20,7 @@ class Cache {
   public:
     void access(uint64_t baseaddr, uint64_t numaddrs);
     Cache(uint64_t line_size) : line_size_{line_size}, accesses_{0},
-      split_accesses_{0} {}
+      split_accesses_{0}, ofs1{"temp.out"}, ofs2{"tmp.tmp"} {}
     uint64_t getAccesses() const { return accesses_; }
     vector<uint64_t> getHits() const { return hits_; }
     uint64_t getColdMisses() const { return hits_.size(); }
@@ -34,6 +34,7 @@ class Cache {
     uint64_t split_accesses_;
     map<uint64_t, uint64_t> last_use_;
     RBtree stack_residency_;
+    ofstream ofs1, ofs2;
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
@@ -47,10 +48,15 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
     if(last_use_iterator != end(last_use_)){
       // calc distance
       auto last_use_time = last_use_iterator->second;
+      //offs << "Req " << last_use_time << endl << stack_residency_ << endl;
+      ofs1 << last_use_time << endl;
       auto num_zeroes = stack_residency_.distance(last_use_time);
       uint64_t distance = current_time - last_use_time - num_zeroes;
       // It's not possible to have a reuse distance of 0, so we shift everything over
       // so our vector is packed.
+      if(distance > hits_.size()){
+        ofs2 << "cur: " << current_time << " last: " << last_use_time << " zeros: " << num_zeroes << " =dist: " << distance << endl;
+      }
       ++hits_[distance - 1];
     } else {
       hits_.emplace_back(0);
