@@ -10,6 +10,7 @@
 #include <mutex>
 
 #include "byfl.h"
+#include "rbtree.h"
 
 namespace bytesflops {}
 using namespace bytesflops;
@@ -32,7 +33,7 @@ class Cache {
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
     map<uint64_t, uint64_t> last_use_;
-    vector<bool> stack_residency_;
+    RBtree stack_residency_;
 };
 
 void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
@@ -42,24 +43,20 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
       addr += line_size_, ++num_accesses){
     auto current_time = accesses_ + num_accesses;
 
-    auto last_use_time = last_use_.find(addr);
-    if(last_use_time != end(last_use_)){
+    auto last_use_iterator = last_use_.find(addr);
+    if(last_use_iterator != end(last_use_)){
       // calc distance
-      uint64_t distance = 0;
-      for(auto resident = begin(stack_residency_) + last_use_time->second;
-          resident != end(stack_residency_); ++resident){
-        if(*resident) ++distance;
-      }
-      ++hits_[distance];
-      //update B
-      stack_residency_[last_use_time->second] = false;
+      auto last_use_time = last_use_iterator->second;
+      auto num_zeroes = stack_residency_.distance(last_use_time);
+      uint64_t distance = current_time - last_use_time - num_zeroes;
+      // It's not possible to have a reuse distance of 0, so we shift everything over
+      // so our vector is packed.
+      ++hits_[distance - 1];
     } else {
       hits_.emplace_back(0);
     }
     //update P
     last_use_[addr] = current_time;
-    //update B
-    stack_residency_.push_back(true);
   }
 
   // we've made all our accesses
