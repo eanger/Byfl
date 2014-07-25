@@ -110,15 +110,15 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
       // calc distance
       auto last_use_time = last_use_iterator->second;
       //offs << "Req " << last_use_time << endl << stack_residency_ << endl;
-      ofs1 << last_use_time << endl;
+      //ofs1 << last_use_time << endl;
       //auto num_zeroes = stack_residency_.distance(last_use_time);
       auto num_zeroes = distance(stack_residency_, last_use_time);
       uint64_t distance = current_time - last_use_time - num_zeroes;
       // It's not possible to have a reuse distance of 0, so we shift everything over
       // so our vector is packed.
-      if(distance > hits_.size()){
-        ofs2 << "cur: " << current_time << " last: " << last_use_time << " zeros: " << num_zeroes << " =dist: " << distance << endl;
-      }
+      //if(distance > hits_.size()){
+        //ofs2 << "cur: " << current_time << " last: " << last_use_time << " zeros: " << num_zeroes << " =dist: " << distance << endl;
+      //}
       ++hits_[distance - 1];
     } else {
       hits_.emplace_back(0);
