@@ -8,13 +8,73 @@
 #include <iterator>
 #include <thread>
 #include <mutex>
+#include <set>
 
 #include "byfl.h"
-#include "rbtree.h"
 
 namespace bytesflops {}
 using namespace bytesflops;
 using namespace std;
+
+struct Interval{
+  uint64_t vals[2];
+  Interval(uint64_t v) : vals{v,v} {}
+  Interval(uint64_t a, uint64_t b) : vals{a,b} {}
+};
+
+bool operator< (const Interval& lhs, const Interval& rhs){
+  return lhs.vals[1] < rhs.vals[0];
+}
+bool operator> (const Interval& lhs, const Interval& rhs){
+  return lhs.vals[0] > rhs.vals[1];
+}
+
+uint64_t distance(set<Interval>& ivals, uint64_t hole){
+  auto greater = ivals.upper_bound(hole);
+  auto accum_op = [](const uint64_t& accum, const Interval& ival){
+                     return accum + ival.vals[1] - ival.vals[0] + 1;};
+  auto res = accumulate(greater, end(ivals), uint64_t{0}, accum_op);
+
+  /*
+   * cases for greater:
+   *  end - this is the max element. should check previous for adjacency.
+   *  begin - this is the first element. check for adjacency, no need to check previous
+   *  else - somewhere in the middle. check for adjacency and previous.
+   *
+   * cases for previous:
+   *    previous = greater;
+   *    --previous;
+   *  check adjacency, delete if necessary
+   */
+
+  if(greater == begin(ivals)){
+    if(hole == greater->vals[0] - 1){
+      auto right = greater->vals[1];
+      ivals.erase(greater);
+      ivals.insert(begin(ivals), Interval{hole, right});
+    } else {
+      ivals.insert(greater, Interval{hole});
+    }
+  } else {
+    auto previous = greater;
+    --previous;
+    auto hint = greater;
+    auto left = hole;
+    auto right = hole;
+    if(hole == previous->vals[1] + 1){
+      left = previous->vals[0];
+      ivals.erase(previous);
+    }
+    if(hole == greater->vals[0] - 1){
+      ++hint;
+      right = greater->vals[1];
+      ivals.erase(greater);
+    }
+    ivals.insert(hint, Interval{left, right});
+  }
+
+  return res;
+}
 
 class Cache {
   public:
@@ -32,8 +92,9 @@ class Cache {
     uint64_t accesses_;
     vector<uint64_t> hits_;  // back is lru, front is mru
     uint64_t split_accesses_;
-    map<uint64_t, uint64_t> last_use_;
-    RBtree stack_residency_;
+    unordered_map<uint64_t, uint64_t> last_use_;
+    //RBtree stack_residency_;
+    set<Interval> stack_residency_;
     ofstream ofs1, ofs2;
 };
 
@@ -50,7 +111,8 @@ void Cache::access(uint64_t baseaddr, uint64_t numaddrs){
       auto last_use_time = last_use_iterator->second;
       //offs << "Req " << last_use_time << endl << stack_residency_ << endl;
       ofs1 << last_use_time << endl;
-      auto num_zeroes = stack_residency_.distance(last_use_time);
+      //auto num_zeroes = stack_residency_.distance(last_use_time);
+      auto num_zeroes = distance(stack_residency_, last_use_time);
       uint64_t distance = current_time - last_use_time - num_zeroes;
       // It's not possible to have a reuse distance of 0, so we shift everything over
       // so our vector is packed.
