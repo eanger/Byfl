@@ -8,6 +8,7 @@
 #include <iterator>
 #include <thread>
 #include <mutex>
+#include <queue>
 
 #include "byfl.h"
 
@@ -73,14 +74,12 @@ namespace bytesflops{
 
 static __thread Cache* cache = nullptr;
 static vector<Cache*>* caches = nullptr;
-static Cache* global_cache = nullptr;
-static mutex cache_vector_mutex, global_cache_mutex;
+static mutex cache_vector_mutex;
 
 void initialize_cache(void){
   if(caches == nullptr){
     caches = new vector<Cache*>();
   }
-  global_cache = new Cache(bf_line_size);
 }
 
 // Access the cache model with this address.
@@ -92,21 +91,15 @@ void bf_touch_cache(uint64_t baseaddr, uint64_t numaddrs){
     caches->push_back(cache);
   }
   cache->access(baseaddr, numaddrs);
-  lock_guard<mutex> guard(global_cache_mutex);
-  global_cache->access(baseaddr, numaddrs);
 }
 
 // Get cache accesses
-uint64_t bf_get_private_cache_accesses(void){
+uint64_t bf_get_cache_accesses(void){
   uint64_t res = 0;
   for(auto& cache: *caches){
     res += cache->getAccesses();
   }
   return res;
-}
-
-uint64_t bf_get_shared_cache_accesses(void){
-  return global_cache->getAccesses();
 }
 
 // Get cache hits
@@ -141,16 +134,22 @@ vector<uint64_t> bf_get_private_cache_hits(void){
 }
 
 vector<uint64_t> bf_get_shared_cache_hits(void){
-  vector<uint64_t> res(global_cache->getHits());
-  uint64_t prev_hits = 0;
-  for(uint64_t i = 0; i < res.size(); ++i){
-    res[i] += prev_hits;
-    prev_hits = res[i];
+  vector<uint64_t> shared_hits;
+  for(const auto& cache : *caches){
+    auto hits = cache->getHits();
+    shared_hits.insert(end(shared_hits), begin(hits), end(hits));
   }
-  return res;
+  sort(begin(shared_hits), end(shared_hits), greater<uint64_t>());
+
+  uint64_t prev_hits = 0;
+  for(auto& hit : shared_hits){
+    hit += prev_hits;
+    prev_hits = hit;
+  }
+  return shared_hits;
 }
 
-uint64_t bf_get_private_cold_misses(void){
+uint64_t bf_get_cold_misses(void){
   uint64_t res = 0;
   for(auto& cache: *caches){
     res += cache->getColdMisses();
@@ -158,20 +157,12 @@ uint64_t bf_get_private_cold_misses(void){
   return res;
 }
 
-uint64_t bf_get_shared_cold_misses(void){
-  return global_cache->getColdMisses();
-}
-
-uint64_t bf_get_private_split_accesses(void){
+uint64_t bf_get_split_accesses(void){
   uint64_t res = 0;
   for(auto& cache: *caches){
     res += cache->getSplitAccesses();
   }
   return res;
-}
-
-uint64_t bf_get_shared_split_accesses(void){
-  return global_cache->getSplitAccesses();
 }
 
 } // namespace bytesflops

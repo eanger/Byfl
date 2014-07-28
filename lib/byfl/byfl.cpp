@@ -1085,40 +1085,37 @@ private:
     //       << fixed << setw(5) << setprecision(1) << hit_rate*100.0 << "% of memory accesses\n";
   // Report cache performance if it was used.
   void report_cache (void) {
-    uint64_t private_accesses = bf_get_private_cache_accesses();
+    uint64_t accesses = bf_get_cache_accesses();
     vector<uint64_t> private_hits = bf_get_private_cache_hits();
-    uint64_t private_cold_misses = bf_get_private_cold_misses();
-    uint64_t private_split_accesses = bf_get_private_split_accesses();
-    uint64_t shared_accesses = bf_get_shared_cache_accesses();
+    uint64_t cold_misses = bf_get_cold_misses();
+    uint64_t split_accesses = bf_get_split_accesses();
     vector<uint64_t> shared_hits = bf_get_shared_cache_hits();
-    uint64_t shared_cold_misses = bf_get_shared_cold_misses();
-    uint64_t shared_split_accesses = bf_get_shared_split_accesses();
 
     ofstream private_dumpfile, shared_dumpfile;
     if (bf_dump_cache){
       private_dumpfile.open("private-cache.dump");
-      private_dumpfile << "Total cache accesses\t" << private_accesses << endl;
-      private_dumpfile << "Cold misses\t" << private_cold_misses << endl;
-      private_dumpfile << "Split accesses\t" << private_split_accesses << endl;
+      private_dumpfile << "Total cache accesses\t" << accesses << endl;
+      private_dumpfile << "Cold misses\t" << cold_misses << endl;
+      private_dumpfile << "Split accesses\t" << split_accesses << endl;
       private_dumpfile << "Size\tHits" << endl;
       shared_dumpfile.open("shared-cache.dump");
-      shared_dumpfile << "Total cache accesses\t" << shared_accesses << endl;
-      shared_dumpfile << "Cold misses\t" << shared_cold_misses << endl;
-      shared_dumpfile << "Split accesses\t" << shared_split_accesses << endl;
+      shared_dumpfile << "Total cache accesses\t" << accesses << endl;
+      shared_dumpfile << "Cold misses\t" << cold_misses << endl;
+      shared_dumpfile << "Split accesses\t" << split_accesses << endl;
       shared_dumpfile << "Size\tHits" << endl;
     }
 
     string tag(bf_output_prefix + "BYFL_SUMMARY");
-    *bfout << tag << ": " << setw(25) << private_accesses << " Total cache accesses\n";
+    *bfout << tag << ": " << setw(25) << accesses << " Total cache accesses\n";
 
     const double pct_change = 0.05;   // Minimum percentage-point change to output
     double last_hitrate = 0;
     uint64_t cur_size = 0;
     for(auto& hit : private_hits){
       cur_size += bf_line_size;
-      auto cur_hitrate = hit / (double) private_accesses;
+      auto cur_hitrate = hit / (double) accesses;
       if(cur_hitrate - last_hitrate > pct_change || 
-         hit == private_accesses){
+         hit == accesses){
         *bfout << tag << ": " << setw(25) << cur_size << " byte cache covers "
                << fixed << setw(5) << setprecision(1) << cur_hitrate * 100.0 
                << "% of cache accesses\n";
