@@ -166,24 +166,31 @@ uint64_t bf_get_cache_accesses(void){
 // Get cache hits
 vector<uint64_t> bf_get_cache_hits(void){
   // hack: dump out our stats now
-  auto l1 = cache->l1;
-  auto l2 = cache->l2;
-  auto l3 = cache->l3;
+  long accesses[4]{0,0,0,0};
+  long conflicts[3]{0,0,0};
+  for(auto& cache: *caches){
+    auto l1 = cache->l1;
+    auto l2 = cache->l2;
+    auto l3 = cache->l3;
+    accesses[0] += l1->fetch[D4XREAD] + l1->fetch[D4XWRITE];
+    accesses[1] += l2->fetch[D4XREAD] + l2->fetch[D4XWRITE];
+    accesses[2] += l3->fetch[D4XREAD] + l3->fetch[D4XWRITE];
+    accesses[3] += l3->miss[D4XREAD] + l3->miss[D4XWRITE];
+    conflicts[0] += l1->conf_miss[D4XREAD] + l1->conf_miss[D4XWRITE];
+    conflicts[1] += l2->conf_miss[D4XREAD] + l2->conf_miss[D4XWRITE];
+    conflicts[2] += l3->conf_miss[D4XREAD] + l3->conf_miss[D4XWRITE];
+  }
   ofstream df{"dinero.dump"};
   df << fixed;
   df << "l1 accesses\tl2 accesses\tl3 accesses\tmem accesses" << endl;
-  df << l1->fetch[D4XREAD] + l1->fetch[D4XWRITE] << "\t"
-     << l2->fetch[D4XREAD] + l2->fetch[D4XWRITE] << "\t"
-     << l3->fetch[D4XREAD] + l3->fetch[D4XWRITE] << "\t"
-     << l3->miss[D4XREAD] + l3->miss[D4XWRITE] << endl;
+  df << accesses[0] << "\t"
+     << accesses[1] << "\t"
+     << accesses[2] << "\t"
+     << accesses[3] << endl;
   df << "l1 conflict misses\tl2 conflict misses\tl3 conflict misses" << endl;
-  df << l1->conf_miss[D4XREAD] + l1->conf_miss[D4XWRITE] << "\t"
-     << l2->conf_miss[D4XREAD] + l2->conf_miss[D4XWRITE] << "\t"
-     << l3->conf_miss[D4XREAD] + l3->conf_miss[D4XWRITE] << endl;
-  // The total hits to a cache size N is equal to the sum of unique hits to 
-  // all caches sized N or smaller.
-  auto hits = cache->getHits();
-  vector<uint64_t> tot_hits(hits.size());
+  df << conflicts[0] << "\t"
+     << conflicts[1] << "\t"
+     << conflicts[2] << endl;
   // The total hits to a cache size N is equal to the sum of unique hits to all
   // caches sized N or smaller.  We'll aggregate the cache performance across
   // all threads; global L1 accesses is equivalent to the sum of individual L1
