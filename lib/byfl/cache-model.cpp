@@ -148,9 +148,8 @@ vector<uint64_t> bf_get_shared_cache_hits(void){
     uint64_t max = 0;
     for(size_t cache_idx = 0; cache_idx < caches->size(); ++cache_idx){
       const auto& hits = (*caches)[cache_idx]->getHits();
-      if(i < hits.size() &&
-         hits[i] > max){
-        max = hits[i];
+      if(hits[shared_hits[cache_idx]] > max){
+        max = hits[shared_hits[cache_idx]];
         winner = i;
       }
     }
