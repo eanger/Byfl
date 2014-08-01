@@ -134,18 +134,29 @@ vector<uint64_t> bf_get_private_cache_hits(void){
 }
 
 vector<uint64_t> bf_get_shared_cache_hits(void){
-  vector<uint64_t> shared_hits;
-  for(const auto& cache : *caches){
-    auto hits = cache->getHits();
-    shared_hits.insert(end(shared_hits), begin(hits), end(hits));
+  size_t longest = 0;
+  for(const auto& cache: *caches){
+    auto cur_size = cache->getHits().size();
+    if(cur_size > longest){
+      longest = cur_size;
+    }
   }
-  sort(begin(shared_hits), end(shared_hits), greater<uint64_t>());
 
-  uint64_t prev_hits = 0;
-  for(auto& hit : shared_hits){
-    hit += prev_hits;
-    prev_hits = hit;
+  vector<uint64_t> shared_hits(caches->size(), 0);
+  for(size_t i = 0; i < longest; ++i){
+    uint64_t winner = 0;
+    uint64_t max = 0;
+    for(size_t cache_idx = 0; cache_idx < caches->size(); ++cache_idx){
+      const auto& hits = (*caches)[cache_idx]->getHits();
+      if(i < hits.size() &&
+         hits[i] > max){
+        max = hits[i];
+        winner = i;
+      }
+    }
+    ++shared_hits[winner];
   }
+
   return shared_hits;
 }
 
