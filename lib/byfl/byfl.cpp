@@ -1089,7 +1089,7 @@ private:
     vector<uint64_t> private_hits = bf_get_private_cache_hits();
     uint64_t cold_misses = bf_get_cold_misses();
     uint64_t split_accesses = bf_get_split_accesses();
-    vector<uint64_t> shared_hits = bf_get_shared_cache_hits();
+    auto shared_hits = bf_get_shared_cache_hits();
 
     ofstream private_dumpfile, shared_dumpfile;
     if (bf_dump_cache){
@@ -1102,7 +1102,6 @@ private:
       shared_dumpfile << "Total cache accesses\t" << accesses << endl;
       shared_dumpfile << "Cold misses\t" << cold_misses << endl;
       shared_dumpfile << "Split accesses\t" << split_accesses << endl;
-      shared_dumpfile << "Size\tHits" << endl;
     }
 
     string tag(bf_output_prefix + "BYFL_SUMMARY");
@@ -1131,8 +1130,13 @@ private:
         private_size += bf_line_size;
         private_dumpfile << private_size << "\t" << hit << endl;
       }
+      shared_dumpfile << "Counts:\t";
+      for(const auto& elem : shared_hits.second){
+        shared_dumpfile << elem << "\t";
+      }
+      shared_dumpfile << endl << "Size\tHits" << endl;
       uint64_t shared_size = 0;
-      for(auto& hit : shared_hits){
+      for(auto& hit : shared_hits.first){
         shared_size += bf_line_size;
         shared_dumpfile << shared_size << "\t" << hit << endl;
       }

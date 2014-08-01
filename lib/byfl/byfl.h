@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <vector>
 #include <wordexp.h>
+#include <utility>
 
 #include "byfl-common.h"
 #include "cachemap.h"
@@ -79,7 +80,7 @@ namespace bytesflops {
   extern void initialize_cache(void);
   extern uint64_t bf_get_cache_accesses(void);
   extern vector<uint64_t> bf_get_private_cache_hits(void);
-  extern vector<uint64_t> bf_get_shared_cache_hits(void);
+  extern pair<vector<uint64_t>, vector<uint64_t> > bf_get_shared_cache_hits(void);
   extern uint64_t bf_get_cold_misses(void);
   extern uint64_t bf_get_split_accesses(void);
 

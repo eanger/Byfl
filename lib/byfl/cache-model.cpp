@@ -133,7 +133,7 @@ vector<uint64_t> bf_get_private_cache_hits(void){
   return tot_hits;
 }
 
-vector<uint64_t> bf_get_shared_cache_hits(void){
+pair<vector<uint64_t>, vector<uint64_t> > bf_get_shared_cache_hits(void){
   size_t longest = 0;
   for(const auto& cache: *caches){
     auto cur_size = cache->getHits().size();
@@ -142,21 +142,27 @@ vector<uint64_t> bf_get_shared_cache_hits(void){
     }
   }
 
-  vector<uint64_t> shared_hits(caches->size(), 0);
+  vector<uint64_t> current_ptrs(caches->size(), 0);
+  vector<uint64_t> shared_hits(longest);
   for(size_t i = 0; i < longest; ++i){
     uint64_t winner = 0;
-    uint64_t max = 0;
+    shared_hits[i] = 0;
     for(size_t cache_idx = 0; cache_idx < caches->size(); ++cache_idx){
       const auto& hits = (*caches)[cache_idx]->getHits();
-      if(hits[shared_hits[cache_idx]] > max){
-        max = hits[shared_hits[cache_idx]];
-        winner = i;
+      if(hits[current_ptrs[cache_idx]] > shared_hits[i]){
+        shared_hits[i] = hits[current_ptrs[cache_idx]];
+        winner = cache_idx;
       }
     }
-    ++shared_hits[winner];
+    ++current_ptrs[winner];
   }
 
-  return shared_hits;
+  uint64_t prev_hits = 0;
+  for(uint64_t i = 0; i < shared_hits.size(); ++i){
+    shared_hits[i] += prev_hits;
+    prev_hits = shared_hits[i];
+  }
+  return make_pair(shared_hits, current_ptrs);
 }
 
 uint64_t bf_get_cold_misses(void){
